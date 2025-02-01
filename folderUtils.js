@@ -3,12 +3,11 @@
  * @returns {string} - The ID of the parent folder.
  */
 function getParentFolderId() {
-  var spreadsheetId =  SpreadsheetApp.getActiveSpreadsheet().getId();
-  var spreadsheetFile =  DriveApp.getFileById(spreadsheetId);
+  var spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var spreadsheetFile = DriveApp.getFileById(spreadsheetId);
   var folderId = spreadsheetFile.getParents().next().getId();
-  return folderId
+  return folderId;
 }
-
 
 /**
  * Creates a folder under the specified root folder.
@@ -17,7 +16,7 @@ function getParentFolderId() {
  * @returns {string} - The ID of the created folder.
  */
 function createFolderUnderRootFolder(rootFolderId, folderName) {
-  var rootFolder = DriveApp.getFolderById(rootFolderId)
+  var rootFolder = DriveApp.getFolderById(rootFolderId);
 
   const folderIterator = rootFolder.getFoldersByName(folderName);
   if (folderIterator.hasNext()) {
@@ -25,7 +24,7 @@ function createFolderUnderRootFolder(rootFolderId, folderName) {
     return folderIterator.next().getId();
   } else {
     // When the folder doesn't exist
-    return rootFolder.createFolder(folderName).getId()
+    return rootFolder.createFolder(folderName).getId();
   }
 }
 
@@ -35,16 +34,14 @@ function createFolderUnderRootFolder(rootFolderId, folderName) {
  * @param {string} fileName - The name of the file.
  */
 function removeFileIfExists(folder, fileName) {
-    // Try to find a file with the same name in the destination folder
-    var existingFiles = folder.getFilesByName(fileName);
-    if (existingFiles.hasNext()) {
-      // There is an existing file with the same name, so delete it
-      var existingFile = existingFiles.next();
-      existingFile.setTrashed(true); // Move to trash
-    }
+  // Try to find a file with the same name in the destination folder
+  var existingFiles = folder.getFilesByName(fileName);
+  if (existingFiles.hasNext()) {
+    // There is an existing file with the same name, so delete it
+    var existingFile = existingFiles.next();
+    existingFile.setTrashed(true); // Move to trash
+  }
 }
-
-
 
 /**
  * Gets template files containing a specific substring.
@@ -57,11 +54,10 @@ function getTemplateFilesWithSubstring(substring, allTemplateFiles) {
   for (i in allTemplateFiles) {
     var fileName = allTemplateFiles[i].getName();
     if (fileName.includes(substring)) {
-      templateFiles.push(allTemplateFiles[i])
+      templateFiles.push(allTemplateFiles[i]);
     }
   }
-  return templateFiles
-
+  return templateFiles;
 }
 
 /**
@@ -73,15 +69,15 @@ function getFilesUnderRootRolder(rootFolderId) {
   var rootFolder = DriveApp.getFolderById(rootFolderId);
   var files = [];
 
-  var filesIterator = rootFolder.getFiles()
+  var filesIterator = rootFolder.getFiles();
 
-  while (filesIterator.hasNext()) { // Iterate through the files
+  while (filesIterator.hasNext()) {
+    // Iterate through the files
     var file = filesIterator.next();
-    files.push(file)
+    files.push(file);
   }
-  return files
+  return files;
 }
-
 
 /**
  * Adds editors to a folder if not already added.
@@ -90,42 +86,48 @@ function getFilesUnderRootRolder(rootFolderId) {
  */
 function addEditorToFolder(folderId, emails) {
   var folder = DriveApp.getFolderById(folderId);
-  var existingEditors = folder.getEditors().map(function(editor) {
+  var existingEditors = folder.getEditors().map(function (editor) {
     return editor.getEmail();
   });
-  
+
   for (var i in emails) {
     var email = emails[i];
     if (email !== "" && existingEditors.indexOf(email) === -1) {
       try {
-        folder.addEditor(email);  // Attempt to add the editor
+        folder.addEditor(email); // Attempt to add the editor
       } catch (e) {
-        Logger.log("Error adding editor: " + email + ". Error: " + e.message);  // Log error if something goes wrong
+        Logger.log("Error adding editor: " + email + ". Error: " + e.message); // Log error if something goes wrong
       }
     }
   }
 }
 
-
 /**
  * Shares all scoring folders with specified emails.
  */
-function shareAllScoringFoldersWithEmails() {
+function shareScoringFoldersWithEmails() {
   var currentSheet = SpreadsheetApp.getActiveSpreadsheet();
   var range = currentSheet.getRangeByName("EventsAndEmailSharing");
   var values = range.getValues();
-  var rangeValues = values.filter(function(subList) {
-    return subList[0] !== ""
+  var rangeValues = values.filter(function (subList) {
+    return subList[0] !== "";
   });
 
   var parentFolderId = getParentFolderId();
-  var scoreSheetFolderId = createFolderUnderRootFolder(parentFolderId, getTournamentNameParsed() + " - Event Specific Score Sheets");
-  
+  var scoreSheetFolderId = createFolderUnderRootFolder(
+    parentFolderId,
+    getTournamentNameParsed() + " - Event Specific Score Sheets",
+  );
+
   for (let j in rangeValues) {
     var eventName = rangeValues[j][0];
-    Logger.log(eventName)
-    var spreadSheetName = eventName + " Event Scoring - " + getTournamentNameParsed();
-    var spreadSheetFolderId = createFolderUnderRootFolder(scoreSheetFolderId, spreadSheetName);
+    Logger.log(eventName);
+    var spreadSheetName =
+      eventName + " Event Scoring - " + getTournamentNameParsed();
+    var spreadSheetFolderId = createFolderUnderRootFolder(
+      scoreSheetFolderId,
+      spreadSheetName,
+    );
     addEditorToFolder(spreadSheetFolderId, rangeValues[j].slice(1, 4));
   }
 }

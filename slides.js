@@ -1,10 +1,10 @@
 function findSlideShowPresentation() {
-  var parentFolderId = getParentFolderId()
-  var files = getFilesUnderRootRolder(parentFolderId)
+  var parentFolderId = getParentFolderId();
+  var files = getFilesUnderRootRolder(parentFolderId);
   // var division = currentSheet.getRangeByName("Division").getValue();
-  var files = getTemplateFilesWithSubstring("Medals", files)
+  var files = getTemplateFilesWithSubstring("Medals", files);
   // var files = getTemplateFilesWithSubstring(division, files)
-  return files[0].getId()
+  return files[0].getId();
 }
 
 function getDataCorrespondingToEventName(spreadsheet, eventName, maxVal) {
@@ -17,69 +17,77 @@ function getDataCorrespondingToEventName(spreadsheet, eventName, maxVal) {
   */
   var entryList = [];
   for (var i = 2; i <= maxVal; i++) {
-    entryList.push(getCellValueByColumnRowAndOffset(spreadsheet, "A", rowNum, i) + "\t\t" + getCellValueByColumnRowAndOffset(spreadsheet, "B", rowNum, i) + "\t" + getCellValueByColumnRowAndOffset(spreadsheet, "C", rowNum, i))
+    entryList.push(
+      getCellValueByColumnRowAndOffset(spreadsheet, "A", rowNum, i) +
+        "\t\t" +
+        getCellValueByColumnRowAndOffset(spreadsheet, "B", rowNum, i) +
+        "\t" +
+        getCellValueByColumnRowAndOffset(spreadsheet, "C", rowNum, i),
+    );
   }
-  return entryList
+  return entryList;
 }
 
 function getCellValueByColumnRowAndOffset(spreadsheet, column, row, offset) {
-  return spreadsheet.getRange(column + (row + offset) + ":" + column + (row + offset)).getValues()[0]
+  return spreadsheet
+    .getRange(column + (row + offset) + ":" + column + (row + offset))
+    .getValues()[0];
 }
-
 
 function removeSlidesAfterIndex(nIndex, deck) {
   const slides = deck.getSlides();
-  slides.slice(nIndex).forEach(s => s.remove());
+  slides.slice(nIndex).forEach((s) => s.remove());
 }
 
-
 function createOneSlidePerRow() {
-
-  // Replace <INSERT_SLIDE_DECK_ID> wih the ID of your 
+  // Replace <INSERT_SLIDE_DECK_ID> wih the ID of your
   // Google Slides presentation.
   let masterDeckID = findSlideShowPresentation();
   // Open the presentation and get the slides in it.
   let deck = SlidesApp.openById(masterDeckID);
   let slides = deck.getSlides();
 
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet(); 
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var currentSheet = spreadsheet.getSheetByName("Final Rankings");
 
   var range = spreadsheet.getRangeByName("Events");
   var values = range.getValues();
-  var eventNames = values.flat().filter(function(cell) {
-      return cell !== "";
-  })
+  var eventNames = values.flat().filter(function (cell) {
+    return cell !== "";
+  });
 
   // The 2nd slide is the template that will be duplicated
   // once per row in the spreadsheet.
   let eventSlides = slides[1];
   let teamSlides = slides[2];
-  eventSlides.setSkipped(true)
-  teamSlides.setSkipped(true)
+  eventSlides.setSkipped(true);
+  teamSlides.setSkipped(true);
 
-  removeSlidesAfterIndex(3, deck)
+  removeSlidesAfterIndex(3, deck);
 
-  for (var i = eventNames.length - 1; i >=0; i--) {
-    let eventName = eventNames[i]
-    let eventData = getDataCorrespondingToEventName(currentSheet, eventName, 5)
+  for (var i = eventNames.length - 1; i >= 0; i--) {
+    let eventName = eventNames[i];
+    let eventData = getDataCorrespondingToEventName(currentSheet, eventName, 5);
 
     let slide = eventSlides.duplicate();
-    slide.setSkipped(false)
-    
+    slide.setSkipped(false);
+
     // Populate data in the slide that was created
     slide.replaceAllText("EVENT_NAME", eventName);
     slide.replaceAllText("1. __", eventData[0]);
     slide.replaceAllText("2. __", eventData[1]);
     slide.replaceAllText("3. __", eventData[2]);
     slide.replaceAllText("4. __", eventData[3]);
-
   }
 
   // Create the final ranking slide
   let slide = teamSlides.duplicate();
-  slide.setSkipped(false)
-  let eventData = getDataCorrespondingToEventName(currentSheet, "Overall Team Results", 9)
+  slide.setSkipped(false);
+  let eventData = getDataCorrespondingToEventName(
+    currentSheet,
+    "Overall Team Results",
+    9,
+  );
 
   slide.replaceAllText("1. __", eventData[0]);
   slide.replaceAllText("2. __", eventData[1]);
@@ -90,5 +98,5 @@ function createOneSlidePerRow() {
   slide.replaceAllText("7. __", eventData[6]);
   slide.replaceAllText("8. __", eventData[7]);
 
-  teamSlides.move(2)
+  teamSlides.move(2);
 }
