@@ -2,7 +2,7 @@
  * Retrieves the ID of the parent folder of the current spreadsheet.
  * @returns {string} - The ID of the parent folder.
  */
-function getParentFolderId() {
+function getParentFolderId(): string {
   var spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
   var spreadsheetFile = DriveApp.getFileById(spreadsheetId);
   var folderId = spreadsheetFile.getParents().next().getId();
@@ -15,7 +15,7 @@ function getParentFolderId() {
  * @param {string} folderName - The name of the folder to create.
  * @returns {string} - The ID of the created folder.
  */
-function createFolderUnderRootFolder(rootFolderId, folderName) {
+function createFolderUnderRootFolder(rootFolderId: string, folderName: string): string {
   var rootFolder = DriveApp.getFolderById(rootFolderId);
 
   const folderIterator = rootFolder.getFoldersByName(folderName);
@@ -33,7 +33,7 @@ function createFolderUnderRootFolder(rootFolderId, folderName) {
  * @param {Folder} folder - The folder.
  * @param {string} fileName - The name of the file.
  */
-function removeFileIfExists(folder, fileName) {
+function removeFileIfExists(folder: GoogleAppsScript.Drive.Folder, fileName: string) {
   // Try to find a file with the same name in the destination folder
   var existingFiles = folder.getFilesByName(fileName);
   if (existingFiles.hasNext()) {
@@ -49,9 +49,9 @@ function removeFileIfExists(folder, fileName) {
  * @param {File[]} allTemplateFiles - All template files.
  * @returns {File[]} - Template files containing the substring.
  */
-function getTemplateFilesWithSubstring(substring, allTemplateFiles) {
+function getTemplateFilesWithSubstring(substring: string, allTemplateFiles: GoogleAppsScript.Drive.File[]): GoogleAppsScript.Drive.File[] {
   var templateFiles = [];
-  for (i in allTemplateFiles) {
+  for (let i in allTemplateFiles) {
     var fileName = allTemplateFiles[i].getName();
     if (fileName.includes(substring)) {
       templateFiles.push(allTemplateFiles[i]);
@@ -65,7 +65,7 @@ function getTemplateFilesWithSubstring(substring, allTemplateFiles) {
  * @param {string} rootFolderId - The root folder ID.
  * @returns {File[]} - All files under the root folder.
  */
-function getFilesUnderRootRolder(rootFolderId) {
+function getFilesUnderRootRolder(rootFolderId: string) {
   var rootFolder = DriveApp.getFolderById(rootFolderId);
   var files = [];
 
@@ -84,7 +84,7 @@ function getFilesUnderRootRolder(rootFolderId) {
  * @param {string} folderId - The folder ID.
  * @param {string[]} emails - The email addresses of the editors.
  */
-function addEditorToFolder(folderId, emails) {
+function addEditorToFolder(folderId: string, emails: string[]) {
   var folder = DriveApp.getFolderById(folderId);
   var existingEditors = folder.getEditors().map(function (editor) {
     return editor.getEmail();
@@ -95,7 +95,7 @@ function addEditorToFolder(folderId, emails) {
     if (email !== "" && existingEditors.indexOf(email) === -1) {
       try {
         folder.addEditor(email); // Attempt to add the editor
-      } catch (e) {
+      } catch (e: any) {
         Logger.log("Error adding editor: " + email + ". Error: " + e.message); // Log error if something goes wrong
       }
     }
@@ -108,7 +108,15 @@ function addEditorToFolder(folderId, emails) {
 function shareScoringFoldersWithEmails() {
   var currentSheet = SpreadsheetApp.getActiveSpreadsheet();
   var range = currentSheet.getRangeByName("EventsAndEmailSharing");
+  if (!range) {
+    Logger.log("Range 'EventsAndEmailSharing' not found.");
+    return;
+  }
   var values = range.getValues();
+  if (!values) {
+    Logger.log("No values found in the range.");
+    return;
+  }
   var rangeValues = values.filter(function (subList) {
     return subList[0] !== "";
   });

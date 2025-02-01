@@ -3,7 +3,7 @@
  * @param {string} prompt - The prompt message.
  * @returns {string} - The user's response.
  */
-function showPrompt(prompt) {
+function showPrompt(prompt: string): string {
   var ui = SpreadsheetApp.getUi();
 
   var result = ui.prompt(
@@ -27,18 +27,21 @@ function showPrompt(prompt) {
  * Retrieves the parsed full tournament name based on the spreadsheet data.
  * @returns {string} - The full tournament name.
  */
-function getTournamentNameParsed() {
+function getTournamentNameParsed(): string {
   var currentSheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (!currentSheet) {
+    throw new Error("No active spreadsheet found.");
+  }
 
-  var tournamentName = currentSheet.getRangeByName("TournamentName").getValue();
+  var tournamentName = currentSheet.getRangeByName("TournamentName")?.getValue();
   if (tournamentName == "" || tournamentName == "Tournament Name") {
     tournamentName = showPrompt(
       "You have not entered a tournament name. Please enter one now",
     );
-    currentSheet.getRangeByName("TournamentName").setValue(tournamentName);
+    currentSheet.getRangeByName("TournamentName")?.setValue(tournamentName);
   }
 
-  var tournamentDate = currentSheet.getRangeByName("TournamentDate").getValue();
+  var tournamentDate = currentSheet.getRangeByName("TournamentDate")?.getValue();
   var parsedDate = Utilities.formatDate(
     tournamentDate,
     "America/Los_Angeles",
@@ -48,10 +51,8 @@ function getTournamentNameParsed() {
     tournamentDate = showPrompt(
       "You have not entered a tournament date. Please enter one now",
     );
-    currentSheet.getRangeByName("TournamentDate").setValue(tournamentDate);
-    var tournamentDate = currentSheet
-      .getRangeByName("TournamentDate")
-      .getValue();
+    currentSheet.getRangeByName("TournamentDate")?.setValue(tournamentDate);
+    var tournamentDate = currentSheet.getRangeByName("TournamentDate")?.getValue();
     var parsedDate = Utilities.formatDate(
       tournamentDate,
       "America/Los_Angeles",
@@ -59,20 +60,20 @@ function getTournamentNameParsed() {
     );
   }
 
-  var tournamentDivision = currentSheet.getRangeByName("Division").getValue();
+  var tournamentDivision = currentSheet.getRangeByName("Division")?.getValue();
   if (tournamentDivision == "" || tournamentDivision == "__") {
     tournamentDivision = showPrompt(
       "You have not entered a tournament division. Please enter one now",
     );
-    currentSheet.getRangeByName("Division").setValue(tournamentDivision);
+    currentSheet.getRangeByName("Division")?.setValue(tournamentDivision);
   }
 
-  var tournamentLocation = currentSheet.getRangeByName("Location").getValue();
+  var tournamentLocation = currentSheet.getRangeByName("Location")?.getValue();
   if (tournamentLocation == "" || tournamentLocation == "School_Name") {
     tournamentLocation = showPrompt(
       "You have not entered a tournament location. Please enter one now",
     );
-    currentSheet.getRangeByName("Location").setValue(tournamentLocation);
+    currentSheet.getRangeByName("Location")?.setValue(tournamentLocation);
   }
 
   var fullTournamentDate =
@@ -92,7 +93,7 @@ function getTournamentNameParsed() {
  * @param {number} columnIndexStartFromOne - The column index starting from one.
  * @returns {string} - The column letter.
  */
-function getColumnLetters(columnIndexStartFromOne) {
+function getColumnLetters(columnIndexStartFromOne: number): string {
   // https://www.allstacksdeveloper.com/2021/08/how-to-convert-column-index-into-letters-with-google-apps-script.html
   const ALPHABETS = [
     "A",
@@ -142,7 +143,7 @@ function getColumnLetters(columnIndexStartFromOne) {
  * @param {Range} R2 - The second range.
  * @returns {boolean} - True if they intersect, otherwise false.
  */
-function rangeIntersect(R1, R2) {
+function rangeIntersect(R1: GoogleAppsScript.Spreadsheet.Range, R2: GoogleAppsScript.Spreadsheet.Range): boolean {
   var LR1 = R1.getLastRow();
   var Ro2 = R2.getRow();
   if (LR1 < Ro2) return false;
@@ -168,7 +169,8 @@ function rangeIntersect(R1, R2) {
  * @param {Sheet} newSheet - The new sheet.
  * @param {string} eventName - The name of the event.
  */
-function moveRows(templateSheet, newSheet, eventName) {
+function moveRows(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newSheet: GoogleAppsScript.Spreadsheet.Sheet, eventName: string): void {
+
   // Define the ranges we need to copy over
 
   let replacementRanges = ["A2:B104", "AE7:AE9", "AA8", "U3:U103", "K1:O1"];

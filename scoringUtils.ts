@@ -5,9 +5,9 @@
  * @param {Spreadsheet} sourceSheet - The source sheet.
  */
 function pasteLookupFormulasToScoringSheets(
-  targetFolder,
-  targetSheetName,
-  sourceSheet,
+  targetFolder: GoogleAppsScript.Drive.Folder,
+  targetSheetName: string,
+  sourceSheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
 ) {
   /*
   Columns to pull
@@ -28,17 +28,18 @@ function pasteLookupFormulasToScoringSheets(
   var columnsToTransfer = ["Score", "Tier", "Tiebreaker"];
   var columnsToTransferIndex = ["C", "D", "E"];
 
-  for (i in columnsToTransfer) {
+  for (let i in columnsToTransfer) {
     var columnName = columnsToTransfer[i];
     var targetColumnIndex = columnsToTransferIndex[i];
-    var cell = findCellRowAndColumnWithText(sourceSheet, columnName);
+    const cell: number[] | boolean  = findCellRowAndColumnWithText(sourceSheet, columnName);
 
-    if (!cell) {
+    if (!cell || !Array.isArray(cell)) {
       continue;
     }
 
-    var row = cell[1];
-    var column = getColumnLetters(cell[0]);
+    const row = cell[1];
+    const column = getColumnLetters(cell[0]);
+
     var formula =
       '=IMPORTRANGE("' +
       sourceSheetUrl +
@@ -61,15 +62,23 @@ function pasteLookupFormulasToScoringSheets(
 function createNewScoringSpreadsheets() {
   var currentSheet = SpreadsheetApp.getActiveSpreadsheet();
   var templateSheet = currentSheet.getSheetByName("Blank Score Sheet");
+  if (!templateSheet) {
+    SpreadsheetApp.getUi().alert("`Blank Score Sheet` sheet does not exist.");
+    return;
+  }
 
   var range = currentSheet.getRangeByName("Events");
+  if (!range) {
+    SpreadsheetApp.getUi().alert("The named range 'Events' does not exist.");
+    return;
+  }
   var values = range.getValues();
   var sNames = values.flat().filter(function (cell) {
     return cell !== "";
   });
 
-  var teamNumbers = currentSheet.getRangeByName("Team_Numbers").getValues();
-  if (teamNumbers[0][0] == "") {
+  var teamNumbers = currentSheet.getRangeByName("Team_Numbers")?.getValues();
+  if (!teamNumbers || teamNumbers[0][0] == "") {
     SpreadsheetApp.getUi().alert(
       "You have not entered any team numbers. Please try again",
     );
@@ -129,11 +138,15 @@ function createNewScoringSpreadsheets() {
  * @param {string} eventName - The name of the event.
  */
 function pasteLookupFormulasToSourceScoringSheets(
-  currentSheet,
-  newSheetUrl,
-  eventName,
+  currentSheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
+  newSheetUrl: string,
+  eventName: string,
 ) {
   var scoreSheet = currentSheet.getSheetByName(eventName);
+  if (!scoreSheet) {
+    SpreadsheetApp.getUi().alert("Sheet for event '" + eventName + "' does not exist.");
+    return;
+  }
   var columns = ["C", "D", "E"];
   for (let i in columns) {
     var col = columns[i];

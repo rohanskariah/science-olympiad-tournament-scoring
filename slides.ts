@@ -1,4 +1,10 @@
-function findSlideShowPresentation() {
+import { type } from "node:os";
+
+/**
+ * Finds the slide show presentation ID.
+ * @returns {string} - The slide show presentation ID.
+ */
+function findSlideShowPresentation(): string {
   var parentFolderId = getParentFolderId();
   var files = getFilesUnderRootRolder(parentFolderId);
   // var division = currentSheet.getRangeByName("Division").getValue();
@@ -7,8 +13,19 @@ function findSlideShowPresentation() {
   return files[0].getId();
 }
 
-function getDataCorrespondingToEventName(spreadsheet, eventName, maxVal) {
+/**
+ * Retrieves data corresponding to an event name.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} spreadsheet - The spreadsheet.
+ * @param {string} eventName - The event name.
+ * @param {number} maxVal - The maximum value.
+ * @returns {string[]} - The data corresponding to the event name.
+ */
+function getDataCorrespondingToEventName(spreadsheet: GoogleAppsScript.Spreadsheet.Sheet, eventName: string, maxVal: number): string[] {
   let rowNum = findCellRowWithText(spreadsheet, eventName, true);
+  if (!rowNum || typeof rowNum !== "number") {
+    Logger.log("Event name not found in the spreadsheet.");
+    return [];
+  }
   /*
   1st: A{row+2} & B{row+2} & C{row+2}
   2nd: A{row+3} & B{row+3} & C{row+3}
@@ -28,29 +45,52 @@ function getDataCorrespondingToEventName(spreadsheet, eventName, maxVal) {
   return entryList;
 }
 
-function getCellValueByColumnRowAndOffset(spreadsheet, column, row, offset) {
+/**
+ * Retrieves the cell value by column, row, and offset.
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - The spreadsheet.
+ * @param {string} column - The column.
+ * @param {number} row - The row.
+ * @param {number} offset - The offset.
+ * @returns {string} - The cell value.
+ */
+function getCellValueByColumnRowAndOffset(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, column: string, row: number, offset: number): string {
+  // double check this logic
   return spreadsheet
     .getRange(column + (row + offset) + ":" + column + (row + offset))
-    .getValues()[0];
+    .getValues()[0][0];
 }
 
-function removeSlidesAfterIndex(nIndex, deck) {
+/**
+ * Removes slides after a specified index.
+ * @param {number} nIndex - The index after which slides will be removed.
+ * @param {GoogleAppsScript.Slides.Presentation} deck - The presentation deck.
+ */
+function removeSlidesAfterIndex(nIndex: number, deck: GoogleAppsScript.Slides.Presentation): void {
   const slides = deck.getSlides();
   slides.slice(nIndex).forEach((s) => s.remove());
 }
 
+/**
+ * Creates one slide per row in the "Final Rankings" sheet.
+ */
 function createOneSlidePerRow() {
   // Replace <INSERT_SLIDE_DECK_ID> wih the ID of your
   // Google Slides presentation.
   let masterDeckID = findSlideShowPresentation();
   // Open the presentation and get the slides in it.
   let deck = SlidesApp.openById(masterDeckID);
-  let slides = deck.getSlides();
+  let slides: GoogleAppsScript.Slides.Slide[] = deck.getSlides();
 
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  var currentSheet = spreadsheet.getSheetByName("Final Rankings");
+  var currentSheet: GoogleAppsScript.Spreadsheet.Sheet | null = spreadsheet.getSheetByName("Final Rankings");
+  if (!currentSheet || typeof currentSheet === "undefined") {
+    throw new Error("Final Ranking Sheet not found in the spreadsheet.");
+  }
 
   var range = spreadsheet.getRangeByName("Events");
+  if (!range) {
+    throw new Error("Range 'Events' not found in the spreadsheet.");
+  }
   var values = range.getValues();
   var eventNames = values.flat().filter(function (cell) {
     return cell !== "";
@@ -58,8 +98,8 @@ function createOneSlidePerRow() {
 
   // The 2nd slide is the template that will be duplicated
   // once per row in the spreadsheet.
-  let eventSlides = slides[1];
-  let teamSlides = slides[2];
+  let eventSlides: GoogleAppsScript.Slides.Slide = slides[1];
+  let teamSlides: GoogleAppsScript.Slides.Slide = slides[2];
   eventSlides.setSkipped(true);
   teamSlides.setSkipped(true);
 

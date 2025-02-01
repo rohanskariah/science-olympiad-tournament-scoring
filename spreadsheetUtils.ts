@@ -4,8 +4,8 @@
  * @param {string} spreadSheetName - The name of the spreadsheet.
  * @returns {string} - The ID of the new spreadsheet.
  */
-function createNewSpreadSheetUnderSpecificFolder(folderId, spreadSheetName) {
-  folder = DriveApp.getFolderById(folderId);
+function createNewSpreadSheetUnderSpecificFolder(folderId: string, spreadSheetName: string): string {
+  const folder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById(folderId);
   var existing_ss = folder.getFilesByName(spreadSheetName);
   if (existing_ss.hasNext()) {
     DriveApp.getFileById(existing_ss.next().getId()).setTrashed(true);
@@ -21,9 +21,9 @@ function createNewSpreadSheetUnderSpecificFolder(folderId, spreadSheetName) {
  * @param {string} spreadSheetId - The spreadsheet ID.
  * @param {string} sheetTabName - The name of the sheet tab.
  */
-function copyTemplateToSpreadsheet(templateSheet, spreadSheetId, sheetTabName) {
-  var sheet = SpreadsheetApp.openById(spreadSheetId);
-  templateSheet.copyTo(sheet).setName(sheetTabName);
+function copyTemplateToSpreadsheet(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, spreadSheetId: string, sheetTabName: string) {
+  const spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(spreadSheetId);
+  templateSheet.copyTo(spreadsheet).setName(sheetTabName);
 }
 
 /**
@@ -34,10 +34,10 @@ function copyTemplateToSpreadsheet(templateSheet, spreadSheetId, sheetTabName) {
  * @returns {Sheet} - The duplicated sheet.
  */
 function duplicateProtectedSheetToNewSpreadsheet(
-  templateSheet,
-  spreadSheetId,
-  sheetTabName,
-) {
+  templateSheet: GoogleAppsScript.Spreadsheet.Sheet,
+  spreadSheetId: string,
+  sheetTabName: string,
+): GoogleAppsScript.Spreadsheet.Sheet {
   var ss = SpreadsheetApp.openById(spreadSheetId);
 
   // Create the new sheet
@@ -48,13 +48,13 @@ function duplicateProtectedSheetToNewSpreadsheet(
   p2.setDescription(p.getDescription());
   p2.setWarningOnly(p.isWarningOnly());
   if (!p.isWarningOnly()) {
-    p2.removeEditors(p2.getEditors());
-    p2.addEditors(p.getEditors());
+    p2.removeEditors(p2.getEditors().map(editor => editor.getEmail()));
+    p2.addEditors(p.getEditors().map(editor => editor.getEmail()));
   }
   var ranges = p.getUnprotectedRanges();
   var newRanges = [];
-  for (var i = 0; i < ranges.length; i++) {
-    newRanges.push(sheet2.getRange(ranges[i].getA1Notation()));
+  for (let range of ranges) {
+    newRanges.push(sheet2.getRange(range.getA1Notation()));
   }
   p2.setUnprotectedRanges(newRanges);
 
@@ -73,17 +73,29 @@ function duplicateProtectedSheetToNewSpreadsheet(
 function duplicateProtectedSheet() {
   getTournamentNameParsed();
 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  sheet = ss.getSheetByName("Blank Score Sheet");
+  const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet: GoogleAppsScript.Spreadsheet.Sheet | null = ss.getSheetByName("Blank Score Sheet");
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert('Template sheet "Blank Score Sheet" not found.');
+    return;
+  }
 
   var range = SpreadsheetApp.getActive().getRangeByName("Events");
+  if (!range) {
+    SpreadsheetApp.getUi().alert('Named range "Events" not found.');
+    return;
+  }
   var values = range.getValues();
   var sNames = values.flat().filter(function (cell) {
     return cell !== "";
   });
 
-  var highLowScoreWins = SpreadsheetApp.getActive()
-    .getRangeByName("HighLowScoreWins")
+  var highLowScoreWinsRange = SpreadsheetApp.getActive().getRangeByName("HighLowScoreWins");
+  if (!highLowScoreWinsRange) {
+    SpreadsheetApp.getUi().alert('Named range "HighLowScoreWins" not found.');
+    return;
+  }
+  var highLowScoreWins = highLowScoreWinsRange
     .getValues()
     .flat()
     .filter(function (cell) {
@@ -97,7 +109,7 @@ function duplicateProtectedSheet() {
       ss.deleteSheet(cur_sheet);
     }
     // Create the new sheet
-    sheet2 = sheet.copyTo(ss).setName(sNames[j]);
+    const sheet2 = sheet.copyTo(ss).setName(sNames[j]);
 
     // Copy over the event name
     sheet2.getRange("L2:O2").setValue(sNames[j]);
@@ -111,8 +123,8 @@ function duplicateProtectedSheet() {
     p2.setDescription(p.getDescription());
     p2.setWarningOnly(p.isWarningOnly());
     if (!p.isWarningOnly()) {
-      p2.removeEditors(p2.getEditors());
-      p2.addEditors(p.getEditors());
+      p2.removeEditors(p2.getEditors().map(editor => editor.getEmail()));
+      p2.addEditors(p.getEditors().map(editor => editor.getEmail()));
     }
     var ranges = p.getUnprotectedRanges();
     var newRanges = [];
@@ -135,30 +147,33 @@ function duplicateProtectedSheet() {
  * @param {string} sheetName - The name of the sheet where formulas need to be refreshed.
  * @param {number} maxColumns - The maximum number of columns in the range to refresh.
  */
-function forceRefreshSheetFormulas(sheetName, max_col) {
+function forceRefreshSheetFormulas(sheetName: string, maxColumns: number) {
   var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = activeSpreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    throw new Error(`Sheet with name ${sheetName} not found.`);
+  }
   var range = sheet.getDataRange();
-  var numCols = max_col;
-  var numRows = range.getNumRows();
-  var rowOffset = range.getRow();
-  var colOffset = range.getColumn();
+  const numCols: number = maxColumns;
+  const numRows: number = range.getNumRows();
+  const rowOffset: number = range.getRow();
+  const colOffset: number = range.getColumn();
 
   // Change formulas then change them back to refresh it
   var originalFormulas = range.getFormulas();
 
   //Loop through each column and each row in the sheet
   //`row` and `col` are relative to the range, not the sheet
-  for (row = 0; row < numRows; row++) {
-    for (col = 0; col < numCols; col++) {
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
       if (originalFormulas[row][col] != "") {
         range.getCell(row + rowOffset, col + colOffset).setFormula("");
       }
     }
   }
   SpreadsheetApp.flush();
-  for (row = 0; row < numRows; row++) {
-    for (col = 0; col < numCols; col++) {
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
       if (originalFormulas[row][col] != "") {
         range
           .getCell(row + rowOffset, col + colOffset)
@@ -173,14 +188,17 @@ function forceRefreshSheetFormulas(sheetName, max_col) {
  * Retrieves template files for each event and copies them into event-specific folders.
  * @param {string} tournamentName - The parsed full tournament name.
  */
-function getTemplateFilesByEvent(tournamentName) {
+function getTemplateFilesByEvent(tournamentName: string) {
   tournamentName = getTournamentNameParsed();
 
   var currentSheet = SpreadsheetApp.getActiveSpreadsheet();
   var templateSheet = currentSheet.getSheetByName("Blank Score Sheet");
 
-  var range = currentSheet.getRangeByName("Events");
-  var values = range.getValues();
+  var values = currentSheet.getRangeByName("Events")?.getValues();
+  if (!values) {
+    SpreadsheetApp.getUi().alert('Named range "Events" not found.');
+    return;
+  }
   var sNames = values.flat().filter(function (cell) {
     return cell !== "";
   });
@@ -250,7 +268,11 @@ function getTemplateFilesByEvent(tournamentName) {
         );
 
         // Need to copy team names over to scoresheet
-        copyTeamNames(templateSheet, copiedFile);
+        if (templateSheet) {
+          copyTeamNames(templateSheet, copiedFile);
+        } else {
+          throw new Error('Template sheet "Blank Score Sheet" not found.');
+        }
 
         var scoringSpreadSheetName =
           eventName + " Event Scoring - " + getTournamentNameParsed();
@@ -274,11 +296,11 @@ function getTemplateFilesByEvent(tournamentName) {
  * @param {Sheet} templateSheet - The template sheet.
  * @param {File} newFile - The new file.
  */
-function copyTeamNames(templateSheet, newFile) {
-  var newSheet = SpreadsheetApp.openById(newFile.getId());
-  var startingRow = findCellRowWithText(newSheet, "Team #");
+function copyTeamNames(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newFile: GoogleAppsScript.Drive.File) {
+  const newSheet = SpreadsheetApp.openById(newFile.getId());
+  let startingRow = findCellRowWithText(newSheet, "Team #");
 
-  if (startingRow) {
+  if (typeof startingRow === 'number') {
     newSheet
       .getRange("B" + (startingRow + 1) + ":B" + (startingRow + 103))
       .setValues(templateSheet.getRange("Team_Numbers").getValues());
@@ -289,10 +311,12 @@ function copyTeamNames(templateSheet, newFile) {
       .getRange("D" + (startingRow + 1) + ":D" + (startingRow + 103))
       .setValues(templateSheet.getRange("Team_Names").getValues());
   } else {
-    var startingRow = findCellRowWithText(newSheet, "Team Name and State");
-    newSheet
-      .getRange("C" + (startingRow + 1) + ":C" + (startingRow + 103))
-      .setValues(templateSheet.getRange("Team_Numbers").getValues());
+    const startingRow = findCellRowWithText(newSheet, "Team Name and State");
+    if (typeof startingRow === 'number') {
+      newSheet
+        .getRange("C" + (startingRow + 1) + ":C" + (startingRow + 103))
+        .setValues(templateSheet.getRange("Team_Numbers").getValues());
+    }
   }
 }
 
@@ -300,9 +324,10 @@ function copyTeamNames(templateSheet, newFile) {
  * Finds the row number of a cell containing specific text.
  * @param {Spreadsheet} spreadsheet - The spreadsheet.
  * @param {string} textToFind - The text to find.
+ * @param {boolean} sheetNameProvided - Whether the sheet name is provided.
  * @returns {number|boolean} - The row number or false if not found.
  */
-function findCellRowWithText(spreadsheet, textToFind, sheetNameProvided) {
+function findCellRowWithText(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, textToFind: string, sheetNameProvided: boolean = false): number | boolean {
   // Create a text finder instance
 
   if (sheetNameProvided) {
@@ -313,6 +338,9 @@ function findCellRowWithText(spreadsheet, textToFind, sheetNameProvided) {
       var textFinder = sheet.createTextFinder(textToFind);
     } else {
       var sheet = spreadsheet.getSheetByName("Sheet1");
+      if (!sheet) {
+        return false;
+      }
       var textFinder = sheet.createTextFinder(textToFind);
     }
   }
@@ -320,7 +348,7 @@ function findCellRowWithText(spreadsheet, textToFind, sheetNameProvided) {
   // Find all occurrences of the text
   var matchedRanges = textFinder.findAll();
 
-  for (i in matchedRanges) {
+  for (let i in matchedRanges) {
     var range = matchedRanges[i];
     if (range.getColumn() < 5) {
       return range.getRow();
@@ -336,30 +364,37 @@ function findCellRowWithText(spreadsheet, textToFind, sheetNameProvided) {
  * @param {string} textToFind - The text to find.
  * @returns {Array|boolean} - An array containing [column, row] or false if not found.
  */
-function findCellRowAndColumnWithText(spreadsheet, textToFind) {
+function findCellRowAndColumnWithText(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, textToFind: string): number[] | boolean {
   // Create a text finder instance
-  var sheet = spreadsheet.getSheetByName("Scoring");
-  if (sheet) {
-    var textFinder = sheet.createTextFinder(textToFind);
-  } else {
-    var sheet = spreadsheet.getSheetByName("Sheet1");
-    var textFinder = sheet.createTextFinder(textToFind);
+  let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = spreadsheet.getSheetByName("Scoring");
+
+  if (!sheet) {
+    sheet = spreadsheet.getSheetByName("Sheet1");
   }
 
+  if (!sheet) {
+    return false;
+  }
+
+  const textFinder = sheet.createTextFinder(textToFind);
+
   // Account for discrepency in formatting
-  var minRange = sheet
+  const minRange = sheet
     .createTextFinder("Final Scores")
     .matchEntireCell(true)
     .findNext();
   if (minRange) {
     var minCol = minRange.getColumn();
   } else {
-    var minCol =
-      sheet
-        .createTextFinder("Final Rankings")
-        .matchEntireCell(true)
-        .findNext()
-        .getColumn() - 6;
+    const finalRankingsRange = sheet
+      .createTextFinder("Final Rankings")
+      .matchEntireCell(true)
+      .findNext();
+    if (finalRankingsRange) {
+      minCol = finalRankingsRange.getColumn() - 6;
+    } else {
+      return false;
+    }
   }
 
   var maxCol = minCol + 5;
@@ -368,7 +403,7 @@ function findCellRowAndColumnWithText(spreadsheet, textToFind) {
   var matchedRanges = textFinder.matchEntireCell(true).findAll();
   var maxRowRange;
 
-  for (i in matchedRanges) {
+  for (let i in matchedRanges) {
     var range = matchedRanges[i];
     if (
       range.getColumn() >= minCol &&
@@ -405,7 +440,7 @@ function findCellRowAndColumnWithText(spreadsheet, textToFind) {
  * @param {number} startRow - The start row.
  * @returns {number} - The row number.
  */
-function findFirstNonMergedRow(sheet, startColumn, startRow) {
+function findFirstNonMergedRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, startColumn: number, startRow: number): number {
   var row = startRow + 1; // Start checking from the row after the merged cell
 
   var cell = sheet.getRange(row, startColumn, 5, 20);
@@ -416,7 +451,7 @@ function findFirstNonMergedRow(sheet, startColumn, startRow) {
     var mergedRanges = cell.getMergedRanges();
     var isMerged = false;
 
-    for (var i = 0; i < mergedRanges.length; i++) {
+    for (let i in mergedRanges) {
       if (rangeIntersect(cell, mergedRanges[i])) {
         isMerged = true;
         break;

@@ -2,11 +2,11 @@
   "name": "DaVinciRank",
   "version": "1.0.0",
   "description": "Science Olympiad Tournament Scoring System based on Google Sheets",
-  "main": "main.js",
+  "main": "main.ts",
   "scripts": {
     "build": "tsc",
     "lint": "npm run check",
-    "check": "gts check *.js test/*.ts",
+    "check": "gts check *.ts test/*.ts",
     "test": "jest",
     "prettier": "prettier . test --write",
     "coverage": "nyc --reporter=lcov --reporter=text npm test && nyc report --reporter=text-lcov | coveralls",
@@ -14,14 +14,14 @@
   },
   "nyc": {
     "include": [
-      "*.js"
+      "*.ts"
     ],
     "exclude": [
       "test/**/*.ts",
       "node_modules"
     ],
     "extension": [
-      ".js"
+      ".ts"
     ],
     "reporter": [
       "lcov",
