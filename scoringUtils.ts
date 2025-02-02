@@ -1,3 +1,11 @@
+import { getColumnLetters, getTournamentNameParsed, moveRows } from "./utils";
+import { getParentFolderId, createFolderUnderRootFolder } from "./folderUtils";
+import {
+  findCellRowAndColumnWithText,
+  createNewSpreadSheetUnderSpecificFolder,
+  duplicateProtectedSheetToNewSpreadsheet,
+} from "./spreadsheetUtils";
+
 /**
  * Adds IMPORTRANGE formulas to the scoring spreadsheets.
  * @param {Folder} targetFolder - The target folder.
@@ -28,10 +36,13 @@ function pasteLookupFormulasToScoringSheets(
   var columnsToTransfer = ["Score", "Tier", "Tiebreaker"];
   var columnsToTransferIndex = ["C", "D", "E"];
 
-  for (let i in columnsToTransfer) {
+  for (const i in columnsToTransfer) {
     var columnName = columnsToTransfer[i];
     var targetColumnIndex = columnsToTransferIndex[i];
-    const cell: number[] | boolean  = findCellRowAndColumnWithText(sourceSheet, columnName);
+    const cell: number[] | boolean = findCellRowAndColumnWithText(
+      sourceSheet,
+      columnName,
+    );
 
     if (!cell || !Array.isArray(cell)) {
       continue;
@@ -91,7 +102,7 @@ function createNewScoringSpreadsheets() {
     getTournamentNameParsed() + " - Event Specific Score Sheets",
   );
 
-  for (let j in sNames) {
+  for (const j in sNames) {
     var eventName = sNames[j];
     var spreadSheetName =
       eventName + " Event Scoring - " + getTournamentNameParsed();
@@ -144,11 +155,13 @@ function pasteLookupFormulasToSourceScoringSheets(
 ) {
   var scoreSheet = currentSheet.getSheetByName(eventName);
   if (!scoreSheet) {
-    SpreadsheetApp.getUi().alert("Sheet for event '" + eventName + "' does not exist.");
+    SpreadsheetApp.getUi().alert(
+      "Sheet for event '" + eventName + "' does not exist.",
+    );
     return;
   }
   var columns = ["C", "D", "E"];
-  for (let i in columns) {
+  for (const i in columns) {
     var col = columns[i];
     scoreSheet
       .getRange(col + "2")
@@ -165,3 +178,5 @@ function pasteLookupFormulasToSourceScoringSheets(
       );
   }
 }
+
+export { pasteLookupFormulasToScoringSheets };

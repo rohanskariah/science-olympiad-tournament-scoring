@@ -7,6 +7,8 @@
 // @import "scoringUtils.gs"
 // @import "slides.gs"
 
+import { duplicateProtectedSheet } from "./spreadsheetUtils";
+
 /**
  * Runs when the Google Sheets document is opened.
  */

@@ -3,4 +3,8 @@ dist/**
 .nyc_output/**
 build/**
 coverage/**
-test/**
+tests/**
+.cache/**
+.git/**
+
+jest.config.js

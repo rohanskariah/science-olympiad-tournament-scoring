@@ -1,3 +1,5 @@
+import { getTournamentNameParsed } from "./utils";
+
 /**
  * Retrieves the ID of the parent folder of the current spreadsheet.
  * @returns {string} - The ID of the parent folder.
@@ -15,7 +17,10 @@ function getParentFolderId(): string {
  * @param {string} folderName - The name of the folder to create.
  * @returns {string} - The ID of the created folder.
  */
-function createFolderUnderRootFolder(rootFolderId: string, folderName: string): string {
+function createFolderUnderRootFolder(
+  rootFolderId: string,
+  folderName: string,
+): string {
   var rootFolder = DriveApp.getFolderById(rootFolderId);
 
   const folderIterator = rootFolder.getFoldersByName(folderName);
@@ -33,7 +38,10 @@ function createFolderUnderRootFolder(rootFolderId: string, folderName: string): 
  * @param {Folder} folder - The folder.
  * @param {string} fileName - The name of the file.
  */
-function removeFileIfExists(folder: GoogleAppsScript.Drive.Folder, fileName: string) {
+function removeFileIfExists(
+  folder: GoogleAppsScript.Drive.Folder,
+  fileName: string,
+) {
   // Try to find a file with the same name in the destination folder
   var existingFiles = folder.getFilesByName(fileName);
   if (existingFiles.hasNext()) {
@@ -49,9 +57,12 @@ function removeFileIfExists(folder: GoogleAppsScript.Drive.Folder, fileName: str
  * @param {File[]} allTemplateFiles - All template files.
  * @returns {File[]} - Template files containing the substring.
  */
-function getTemplateFilesWithSubstring(substring: string, allTemplateFiles: GoogleAppsScript.Drive.File[]): GoogleAppsScript.Drive.File[] {
+function getTemplateFilesWithSubstring(
+  substring: string,
+  allTemplateFiles: GoogleAppsScript.Drive.File[],
+): GoogleAppsScript.Drive.File[] {
   var templateFiles = [];
-  for (let i in allTemplateFiles) {
+  for (const i in allTemplateFiles) {
     var fileName = allTemplateFiles[i].getName();
     if (fileName.includes(substring)) {
       templateFiles.push(allTemplateFiles[i]);
@@ -95,8 +106,14 @@ function addEditorToFolder(folderId: string, emails: string[]) {
     if (email !== "" && existingEditors.indexOf(email) === -1) {
       try {
         folder.addEditor(email); // Attempt to add the editor
-      } catch (e: any) {
-        Logger.log("Error adding editor: " + email + ". Error: " + e.message); // Log error if something goes wrong
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          Logger.log("Error adding editor: " + email + ". Error: " + e.message);
+        } else {
+          Logger.log(
+            "Error adding editor: " + email + ". Unknown error occurred.",
+          );
+        }
       }
     }
   }
@@ -127,7 +144,7 @@ function shareScoringFoldersWithEmails() {
     getTournamentNameParsed() + " - Event Specific Score Sheets",
   );
 
-  for (let j in rangeValues) {
+  for (const j in rangeValues) {
     var eventName = rangeValues[j][0];
     Logger.log(eventName);
     var spreadSheetName =
@@ -139,3 +156,11 @@ function shareScoringFoldersWithEmails() {
     addEditorToFolder(spreadSheetFolderId, rangeValues[j].slice(1, 4));
   }
 }
+
+export {
+  getParentFolderId,
+  createFolderUnderRootFolder,
+  getFilesUnderRootRolder,
+  getTemplateFilesWithSubstring,
+  removeFileIfExists,
+};

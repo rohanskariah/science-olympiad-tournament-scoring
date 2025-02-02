@@ -1,4 +1,9 @@
-import { type } from "node:os";
+import { findCellRowWithTextInSheet } from "./spreadsheetUtils";
+import {
+  getParentFolderId,
+  getFilesUnderRootRolder,
+  getTemplateFilesWithSubstring,
+} from "./folderUtils";
 
 /**
  * Finds the slide show presentation ID.
@@ -20,8 +25,12 @@ function findSlideShowPresentation(): string {
  * @param {number} maxVal - The maximum value.
  * @returns {string[]} - The data corresponding to the event name.
  */
-function getDataCorrespondingToEventName(spreadsheet: GoogleAppsScript.Spreadsheet.Sheet, eventName: string, maxVal: number): string[] {
-  let rowNum = findCellRowWithText(spreadsheet, eventName, true);
+function getDataCorrespondingToEventName(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  eventName: string,
+  maxVal: number,
+): string[] {
+  const rowNum = findCellRowWithTextInSheet(sheet, eventName);
   if (!rowNum || typeof rowNum !== "number") {
     Logger.log("Event name not found in the spreadsheet.");
     return [];
@@ -35,11 +44,11 @@ function getDataCorrespondingToEventName(spreadsheet: GoogleAppsScript.Spreadshe
   var entryList = [];
   for (var i = 2; i <= maxVal; i++) {
     entryList.push(
-      getCellValueByColumnRowAndOffset(spreadsheet, "A", rowNum, i) +
+      getCellValueByColumnRowAndOffset(sheet, "A", rowNum, i) +
         "\t\t" +
-        getCellValueByColumnRowAndOffset(spreadsheet, "B", rowNum, i) +
+        getCellValueByColumnRowAndOffset(sheet, "B", rowNum, i) +
         "\t" +
-        getCellValueByColumnRowAndOffset(spreadsheet, "C", rowNum, i),
+        getCellValueByColumnRowAndOffset(sheet, "C", rowNum, i),
     );
   }
   return entryList;
@@ -47,13 +56,18 @@ function getDataCorrespondingToEventName(spreadsheet: GoogleAppsScript.Spreadshe
 
 /**
  * Retrieves the cell value by column, row, and offset.
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - The spreadsheet.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The sheet.
  * @param {string} column - The column.
  * @param {number} row - The row.
  * @param {number} offset - The offset.
  * @returns {string} - The cell value.
  */
-function getCellValueByColumnRowAndOffset(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, column: string, row: number, offset: number): string {
+function getCellValueByColumnRowAndOffset(
+  spreadsheet: GoogleAppsScript.Spreadsheet.Sheet,
+  column: string,
+  row: number,
+  offset: number,
+): string {
   // double check this logic
   return spreadsheet
     .getRange(column + (row + offset) + ":" + column + (row + offset))
@@ -65,7 +79,10 @@ function getCellValueByColumnRowAndOffset(spreadsheet: GoogleAppsScript.Spreadsh
  * @param {number} nIndex - The index after which slides will be removed.
  * @param {GoogleAppsScript.Slides.Presentation} deck - The presentation deck.
  */
-function removeSlidesAfterIndex(nIndex: number, deck: GoogleAppsScript.Slides.Presentation): void {
+function removeSlidesAfterIndex(
+  nIndex: number,
+  deck: GoogleAppsScript.Slides.Presentation,
+): void {
   const slides = deck.getSlides();
   slides.slice(nIndex).forEach((s) => s.remove());
 }
@@ -76,13 +93,14 @@ function removeSlidesAfterIndex(nIndex: number, deck: GoogleAppsScript.Slides.Pr
 function createOneSlidePerRow() {
   // Replace <INSERT_SLIDE_DECK_ID> wih the ID of your
   // Google Slides presentation.
-  let masterDeckID = findSlideShowPresentation();
+  const masterDeckID = findSlideShowPresentation();
   // Open the presentation and get the slides in it.
-  let deck = SlidesApp.openById(masterDeckID);
-  let slides: GoogleAppsScript.Slides.Slide[] = deck.getSlides();
+  const deck = SlidesApp.openById(masterDeckID);
+  const slides: GoogleAppsScript.Slides.Slide[] = deck.getSlides();
 
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  var currentSheet: GoogleAppsScript.Spreadsheet.Sheet | null = spreadsheet.getSheetByName("Final Rankings");
+  var currentSheet: GoogleAppsScript.Spreadsheet.Sheet | null =
+    spreadsheet.getSheetByName("Final Rankings");
   if (!currentSheet || typeof currentSheet === "undefined") {
     throw new Error("Final Ranking Sheet not found in the spreadsheet.");
   }
@@ -98,18 +116,22 @@ function createOneSlidePerRow() {
 
   // The 2nd slide is the template that will be duplicated
   // once per row in the spreadsheet.
-  let eventSlides: GoogleAppsScript.Slides.Slide = slides[1];
-  let teamSlides: GoogleAppsScript.Slides.Slide = slides[2];
+  const eventSlides: GoogleAppsScript.Slides.Slide = slides[1];
+  const teamSlides: GoogleAppsScript.Slides.Slide = slides[2];
   eventSlides.setSkipped(true);
   teamSlides.setSkipped(true);
 
   removeSlidesAfterIndex(3, deck);
 
   for (var i = eventNames.length - 1; i >= 0; i--) {
-    let eventName = eventNames[i];
-    let eventData = getDataCorrespondingToEventName(currentSheet, eventName, 5);
+    const eventName = eventNames[i];
+    const eventData = getDataCorrespondingToEventName(
+      currentSheet,
+      eventName,
+      5,
+    );
 
-    let slide = eventSlides.duplicate();
+    const slide = eventSlides.duplicate();
     slide.setSkipped(false);
 
     // Populate data in the slide that was created
@@ -121,9 +143,9 @@ function createOneSlidePerRow() {
   }
 
   // Create the final ranking slide
-  let slide = teamSlides.duplicate();
+  const slide = teamSlides.duplicate();
   slide.setSkipped(false);
-  let eventData = getDataCorrespondingToEventName(
+  const eventData = getDataCorrespondingToEventName(
     currentSheet,
     "Overall Team Results",
     9,

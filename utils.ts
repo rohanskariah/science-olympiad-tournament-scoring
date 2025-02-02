@@ -33,7 +33,9 @@ function getTournamentNameParsed(): string {
     throw new Error("No active spreadsheet found.");
   }
 
-  var tournamentName = currentSheet.getRangeByName("TournamentName")?.getValue();
+  var tournamentName = currentSheet
+    .getRangeByName("TournamentName")
+    ?.getValue();
   if (tournamentName == "" || tournamentName == "Tournament Name") {
     tournamentName = showPrompt(
       "You have not entered a tournament name. Please enter one now",
@@ -41,7 +43,9 @@ function getTournamentNameParsed(): string {
     currentSheet.getRangeByName("TournamentName")?.setValue(tournamentName);
   }
 
-  var tournamentDate = currentSheet.getRangeByName("TournamentDate")?.getValue();
+  var tournamentDate = currentSheet
+    .getRangeByName("TournamentDate")
+    ?.getValue();
   var parsedDate = Utilities.formatDate(
     tournamentDate,
     "America/Los_Angeles",
@@ -52,7 +56,9 @@ function getTournamentNameParsed(): string {
       "You have not entered a tournament date. Please enter one now",
     );
     currentSheet.getRangeByName("TournamentDate")?.setValue(tournamentDate);
-    var tournamentDate = currentSheet.getRangeByName("TournamentDate")?.getValue();
+    var tournamentDate = currentSheet
+      .getRangeByName("TournamentDate")
+      ?.getValue();
     var parsedDate = Utilities.formatDate(
       tournamentDate,
       "America/Los_Angeles",
@@ -143,7 +149,10 @@ function getColumnLetters(columnIndexStartFromOne: number): string {
  * @param {Range} R2 - The second range.
  * @returns {boolean} - True if they intersect, otherwise false.
  */
-function rangeIntersect(R1: GoogleAppsScript.Spreadsheet.Range, R2: GoogleAppsScript.Spreadsheet.Range): boolean {
+function rangeIntersect(
+  R1: GoogleAppsScript.Spreadsheet.Range,
+  R2: GoogleAppsScript.Spreadsheet.Range,
+): boolean {
   var LR1 = R1.getLastRow();
   var Ro2 = R2.getRow();
   if (LR1 < Ro2) return false;
@@ -169,21 +178,30 @@ function rangeIntersect(R1: GoogleAppsScript.Spreadsheet.Range, R2: GoogleAppsSc
  * @param {Sheet} newSheet - The new sheet.
  * @param {string} eventName - The name of the event.
  */
-function moveRows(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newSheet: GoogleAppsScript.Spreadsheet.Sheet, eventName: string): void {
-
+function moveRows(
+  templateSheet: GoogleAppsScript.Spreadsheet.Sheet,
+  newSheet: GoogleAppsScript.Spreadsheet.Sheet,
+  eventName: string,
+): void {
   // Define the ranges we need to copy over
 
-  let replacementRanges = ["A2:B104", "AE7:AE9", "AA8", "U3:U103", "K1:O1"];
+  const replacementRanges = ["A2:B104", "AE7:AE9", "AA8", "U3:U103", "K1:O1"];
 
   // Copy over the event name
   newSheet.getRange("L2:O2").setValue(eventName);
 
   for (let i = 0; i < replacementRanges.length; i++) {
-    let range = replacementRanges[i];
+    const range = replacementRanges[i];
     newSheet
       .getRange(range)
       .setValues(templateSheet.getRange(range).getValues());
   }
 }
 
-module.exports = { showPrompt, getTournamentNameParsed };
+export {
+  showPrompt,
+  getTournamentNameParsed,
+  moveRows,
+  rangeIntersect,
+  getColumnLetters,
+};

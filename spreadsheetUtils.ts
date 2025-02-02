@@ -1,11 +1,25 @@
+import { getTournamentNameParsed, rangeIntersect } from "./utils";
+import {
+  getParentFolderId,
+  createFolderUnderRootFolder,
+  getFilesUnderRootRolder,
+  getTemplateFilesWithSubstring,
+  removeFileIfExists,
+} from "./folderUtils";
+import { pasteLookupFormulasToScoringSheets } from "./scoringUtils";
+
 /**
  * Creates a new spreadsheet under a specific folder.
  * @param {string} folderId - The folder ID.
  * @param {string} spreadSheetName - The name of the spreadsheet.
  * @returns {string} - The ID of the new spreadsheet.
  */
-function createNewSpreadSheetUnderSpecificFolder(folderId: string, spreadSheetName: string): string {
-  const folder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById(folderId);
+function createNewSpreadSheetUnderSpecificFolder(
+  folderId: string,
+  spreadSheetName: string,
+): string {
+  const folder: GoogleAppsScript.Drive.Folder =
+    DriveApp.getFolderById(folderId);
   var existing_ss = folder.getFilesByName(spreadSheetName);
   if (existing_ss.hasNext()) {
     DriveApp.getFileById(existing_ss.next().getId()).setTrashed(true);
@@ -21,8 +35,13 @@ function createNewSpreadSheetUnderSpecificFolder(folderId: string, spreadSheetNa
  * @param {string} spreadSheetId - The spreadsheet ID.
  * @param {string} sheetTabName - The name of the sheet tab.
  */
-function copyTemplateToSpreadsheet(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, spreadSheetId: string, sheetTabName: string) {
-  const spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(spreadSheetId);
+function copyTemplateToSpreadsheet(
+  templateSheet: GoogleAppsScript.Spreadsheet.Sheet,
+  spreadSheetId: string,
+  sheetTabName: string,
+) {
+  const spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet =
+    SpreadsheetApp.openById(spreadSheetId);
   templateSheet.copyTo(spreadsheet).setName(sheetTabName);
 }
 
@@ -48,12 +67,12 @@ function duplicateProtectedSheetToNewSpreadsheet(
   p2.setDescription(p.getDescription());
   p2.setWarningOnly(p.isWarningOnly());
   if (!p.isWarningOnly()) {
-    p2.removeEditors(p2.getEditors().map(editor => editor.getEmail()));
-    p2.addEditors(p.getEditors().map(editor => editor.getEmail()));
+    p2.removeEditors(p2.getEditors().map((editor) => editor.getEmail()));
+    p2.addEditors(p.getEditors().map((editor) => editor.getEmail()));
   }
   var ranges = p.getUnprotectedRanges();
   var newRanges = [];
-  for (let range of ranges) {
+  for (const range of ranges) {
     newRanges.push(sheet2.getRange(range.getA1Notation()));
   }
   p2.setUnprotectedRanges(newRanges);
@@ -73,10 +92,14 @@ function duplicateProtectedSheetToNewSpreadsheet(
 function duplicateProtectedSheet() {
   getTournamentNameParsed();
 
-  const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet: GoogleAppsScript.Spreadsheet.Sheet | null = ss.getSheetByName("Blank Score Sheet");
+  const ss: GoogleAppsScript.Spreadsheet.Spreadsheet =
+    SpreadsheetApp.getActiveSpreadsheet();
+  const sheet: GoogleAppsScript.Spreadsheet.Sheet | null =
+    ss.getSheetByName("Blank Score Sheet");
   if (!sheet) {
-    SpreadsheetApp.getUi().alert('Template sheet "Blank Score Sheet" not found.');
+    SpreadsheetApp.getUi().alert(
+      'Template sheet "Blank Score Sheet" not found.',
+    );
     return;
   }
 
@@ -90,7 +113,8 @@ function duplicateProtectedSheet() {
     return cell !== "";
   });
 
-  var highLowScoreWinsRange = SpreadsheetApp.getActive().getRangeByName("HighLowScoreWins");
+  var highLowScoreWinsRange =
+    SpreadsheetApp.getActive().getRangeByName("HighLowScoreWins");
   if (!highLowScoreWinsRange) {
     SpreadsheetApp.getUi().alert('Named range "HighLowScoreWins" not found.');
     return;
@@ -102,7 +126,7 @@ function duplicateProtectedSheet() {
       return cell !== "";
     });
 
-  for (let j in sNames) {
+  for (const j in sNames) {
     // Remove the sheet if it already exists and then re-create it
     var cur_sheet = ss.getSheetByName(sNames[j]);
     if (cur_sheet) {
@@ -123,8 +147,8 @@ function duplicateProtectedSheet() {
     p2.setDescription(p.getDescription());
     p2.setWarningOnly(p.isWarningOnly());
     if (!p.isWarningOnly()) {
-      p2.removeEditors(p2.getEditors().map(editor => editor.getEmail()));
-      p2.addEditors(p.getEditors().map(editor => editor.getEmail()));
+      p2.removeEditors(p2.getEditors().map((editor) => editor.getEmail()));
+      p2.addEditors(p.getEditors().map((editor) => editor.getEmail()));
     }
     var ranges = p.getUnprotectedRanges();
     var newRanges = [];
@@ -232,7 +256,7 @@ function getTemplateFilesByEvent(tournamentName: string) {
     return;
   }
 
-  for (let j in sNames) {
+  for (const j in sNames) {
     var eventName = sNames[j];
     Logger.log(eventName);
 
@@ -248,7 +272,7 @@ function getTemplateFilesByEvent(tournamentName: string) {
       eventName,
       allTemplateFiles,
     );
-    for (let i in templateFiles) {
+    for (const i in templateFiles) {
       var templateFile = templateFiles[i];
 
       // Copy the template file into event specific scoring folder
@@ -296,11 +320,14 @@ function getTemplateFilesByEvent(tournamentName: string) {
  * @param {Sheet} templateSheet - The template sheet.
  * @param {File} newFile - The new file.
  */
-function copyTeamNames(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newFile: GoogleAppsScript.Drive.File) {
+function copyTeamNames(
+  templateSheet: GoogleAppsScript.Spreadsheet.Sheet,
+  newFile: GoogleAppsScript.Drive.File,
+) {
   const newSheet = SpreadsheetApp.openById(newFile.getId());
-  let startingRow = findCellRowWithText(newSheet, "Team #");
+  const startingRow = findCellRowWithTextInSpreadsheet(newSheet, "Team #");
 
-  if (typeof startingRow === 'number') {
+  if (typeof startingRow === "number") {
     newSheet
       .getRange("B" + (startingRow + 1) + ":B" + (startingRow + 103))
       .setValues(templateSheet.getRange("Team_Numbers").getValues());
@@ -311,8 +338,11 @@ function copyTeamNames(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newFil
       .getRange("D" + (startingRow + 1) + ":D" + (startingRow + 103))
       .setValues(templateSheet.getRange("Team_Names").getValues());
   } else {
-    const startingRow = findCellRowWithText(newSheet, "Team Name and State");
-    if (typeof startingRow === 'number') {
+    const startingRow = findCellRowWithTextInSpreadsheet(
+      newSheet,
+      "Team Name and State",
+    );
+    if (typeof startingRow === "number") {
       newSheet
         .getRange("C" + (startingRow + 1) + ":C" + (startingRow + 103))
         .setValues(templateSheet.getRange("Team_Numbers").getValues());
@@ -321,34 +351,39 @@ function copyTeamNames(templateSheet: GoogleAppsScript.Spreadsheet.Sheet, newFil
 }
 
 /**
- * Finds the row number of a cell containing specific text.
+ * Finds the row number of a cell containing specific text in a spreadsheet.
  * @param {Spreadsheet} spreadsheet - The spreadsheet.
  * @param {string} textToFind - The text to find.
- * @param {boolean} sheetNameProvided - Whether the sheet name is provided.
  * @returns {number|boolean} - The row number or false if not found.
  */
-function findCellRowWithText(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, textToFind: string, sheetNameProvided: boolean = false): number | boolean {
-  // Create a text finder instance
-
-  if (sheetNameProvided) {
-    var textFinder = spreadsheet.createTextFinder(textToFind);
-  } else {
-    var sheet = spreadsheet.getSheetByName("Scoring");
-    if (sheet) {
-      var textFinder = sheet.createTextFinder(textToFind);
-    } else {
-      var sheet = spreadsheet.getSheetByName("Sheet1");
-      if (!sheet) {
-        return false;
-      }
-      var textFinder = sheet.createTextFinder(textToFind);
+function findCellRowWithTextInSpreadsheet(
+  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
+  textToFind: string,
+): number | boolean {
+  var sheet = spreadsheet.getSheetByName("Scoring");
+  if (!sheet) {
+    sheet = spreadsheet.getSheetByName("Sheet1");
+    if (!sheet) {
+      return false;
     }
   }
+  return findCellRowWithTextInSheet(sheet, textToFind);
+}
 
-  // Find all occurrences of the text
+/**
+ * Finds the row number of a cell containing specific text in a sheet.
+ * @param {Sheet} sheet - The sheet.
+ * @param {string} textToFind - The text to find.
+ * @returns {number|boolean} - The row number or false if not found.
+ */
+function findCellRowWithTextInSheet(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  textToFind: string,
+): number | boolean {
+  var textFinder = sheet.createTextFinder(textToFind);
   var matchedRanges = textFinder.findAll();
 
-  for (let i in matchedRanges) {
+  for (const i in matchedRanges) {
     var range = matchedRanges[i];
     if (range.getColumn() < 5) {
       return range.getRow();
@@ -364,9 +399,13 @@ function findCellRowWithText(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadshe
  * @param {string} textToFind - The text to find.
  * @returns {Array|boolean} - An array containing [column, row] or false if not found.
  */
-function findCellRowAndColumnWithText(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet, textToFind: string): number[] | boolean {
+function findCellRowAndColumnWithText(
+  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
+  textToFind: string,
+): number[] | boolean {
   // Create a text finder instance
-  let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = spreadsheet.getSheetByName("Scoring");
+  let sheet: GoogleAppsScript.Spreadsheet.Sheet | null =
+    spreadsheet.getSheetByName("Scoring");
 
   if (!sheet) {
     sheet = spreadsheet.getSheetByName("Sheet1");
@@ -403,7 +442,7 @@ function findCellRowAndColumnWithText(spreadsheet: GoogleAppsScript.Spreadsheet.
   var matchedRanges = textFinder.matchEntireCell(true).findAll();
   var maxRowRange;
 
-  for (let i in matchedRanges) {
+  for (const i in matchedRanges) {
     var range = matchedRanges[i];
     if (
       range.getColumn() >= minCol &&
@@ -440,18 +479,22 @@ function findCellRowAndColumnWithText(spreadsheet: GoogleAppsScript.Spreadsheet.
  * @param {number} startRow - The start row.
  * @returns {number} - The row number.
  */
-function findFirstNonMergedRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, startColumn: number, startRow: number): number {
+function findFirstNonMergedRow(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  startColumn: number,
+  startRow: number,
+): number {
   var row = startRow + 1; // Start checking from the row after the merged cell
 
   var cell = sheet.getRange(row, startColumn, 5, 20);
   var mergedRanges = cell.getMergedRanges();
 
-  while (true) {
+  while (row < 1000) {
     var cell = sheet.getRange(row, startColumn, 5, 20);
     var mergedRanges = cell.getMergedRanges();
     var isMerged = false;
 
-    for (let i in mergedRanges) {
+    for (const i in mergedRanges) {
       if (rangeIntersect(cell, mergedRanges[i])) {
         isMerged = true;
         break;
@@ -464,4 +507,16 @@ function findFirstNonMergedRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, startC
 
     row++; // Move to the next row
   }
+  throw new Error(
+    "Exceeded maximum iterations while searching for non-merged cell.",
+  );
 }
+
+export {
+  findCellRowAndColumnWithText,
+  createNewSpreadSheetUnderSpecificFolder,
+  duplicateProtectedSheetToNewSpreadsheet,
+  findCellRowWithTextInSpreadsheet,
+  findCellRowWithTextInSheet,
+  duplicateProtectedSheet
+};
